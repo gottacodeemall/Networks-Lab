@@ -1,0 +1,94 @@
+﻿CLIENT SIDE:
+ 
+        getting IP address:
+        a)get the ip address by receiving the host_name:
+        		check whether the host_name is null or not
+        			if ((he = gethostbyname (hostname) ) == NULL) 
+        				if null,return error:
+        			else 	 copy the ip_address to ip
+        			   	 using strcpy(ip, inet_ntoa (*addr_list[i]));
+	1)get socket  by clientSocket = socket(PF_INET, SOCK_DGRAM, 0);
+		
+	2)Initialise  client struct sockaddr_in:
+			server.sin_family=AF_INET
+			serverAddr.sin_port = htons(atoi(argv[2]));
+			serverAddr.sin_addr.s_addr = inet_addr(ip);
+			
+	3)make connection with client_server -->>connect(clientSocket, (struct sockaddr *) &serverAddr, addr_size);
+	4)create a struct for time(for the sake of timeout) and for packet.
+	  and set the timer
+	  	setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+	5)scan the number of packets,and set the values of PACKET_STRUCTURE as:
+			scanf("%s", buffer[i].data);
+    			buffer[i].seqno = seqno;
+    			buffer[i].fin = 0;
+    			seqno = 1 - seqno;
+        6) set the finish_flag to 1 at last packet:
+        		buffer[i].fin = 1;
+        7)send the packet one by one to the server in the loop
+        		sendto(clientSocket, &buffer[i], sizeof(struct packet), 0, (struct sockaddr *) &serverAddr, addr_size);
+        8)check the value of ACK received,:recvfrom(clientSocket, &ack, sizeof(int), 0, NULL, NULL)
+        		if (ack==-1)
+        			TIME-OUT
+        			retransmit the same packet
+        		else 
+        			check the ack value,if it is the previous seq.no,continue with next
+        					    else retransmit the same packet
+        9) send the finish flag at last to the server:
+        		sendto(clientSocket, &buffer[i], sizeof(struct packet), 0, (struct sockaddr *) &serverAddr, addr_size); 					
+	
+	10)free the buffer used:
+			free (buffer);
+	11)terminate with a ctrl+c or quit.
+
+
+SERVER SIDE:
+	
+	create a packet structure with:
+			char data[100];
+  			int seqno;
+  			int fin;
+			
+	getting IP address:
+        a)get the ip address by receiving the host_name:
+        		check whether the host_name is null or not
+        			if ((he = gethostbyname (hostname) ) == NULL) 
+        				if null,return error:
+        			else 	 copy the ip_address to ip
+        			   	 using strcpy(ip, inet_ntoa (*addr_list[i]));
+	1)get socket  by  welcomeSocket = socket(PF_INET, SOCK_DGRAM, 0);
+		
+	2)Initialise  client struct sockaddr_in:
+			server.sin_family=AF_INET
+			serverAddr.sin_port = htons(atoi(argv[2]));
+			serverAddr.sin_addr.s_addr = inet_addr(ip);
+			
+    			
+	3)bind the socket:
+			bind(welcomeSocket, (struct sockaddr *) &serverAddr, sizeof(serverAddr));	 
+	4) run the infinity loop,receive the packets into the buffer
+	5)check the finish_flag:if (buffer[i].fin == 1) break the loop.
+	
+	6)ask for simulating packet loss, if no
+			
+			check whether the packet received is duplicate or not,if yes:
+				if (i > 0 && buffer[i].seqno == buffer[i - 1].seqno)
+				    ack=received packet seq_number;
+				else  
+				    acknowledge  packet with yes or no
+				     if yes:
+				      ack=received packet seq_number;
+				     else 
+				      ack= previously received seq_number;    
+        7) simulating ack loss
+        		if no: 
+        		   sendto(welcomeSocket, &ack, sizeof(int), 0, (struct sockaddr *) &serverStorage, addr_size);
+        		else dont;   
+        		   
+	
+	8)print the packets received;
+	
+	9) return 0
+	
+
+
